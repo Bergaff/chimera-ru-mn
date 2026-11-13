@@ -2,7 +2,9 @@
 rem  CHIMERA - local run on Windows. Double-click: installs everything that's missing,
 rem  then builds the wasm and starts the app on http://127.0.0.1:5317.
 rem  First run downloads: Rust (rustup), the wasm32 target, Bun.
-rem  Also offered: Visual Studio C++ Build Tools via winget (needed for cargo test and the CLI).
+rem  Windows needs the Visual Studio C++ Build Tools for ANY cargo build (host build
+rem  scripts link against MSVC) - the batch installs them via winget if missing and
+rem  sets the C++ environment (vcvars64) for this window.
 rem  "dev.bat test" runs cargo test --workspace first and starts the app only if it is green.
 rem  Leave the window open while developing; Ctrl+C to stop.
 setlocal EnableExtensions
@@ -12,7 +14,8 @@ cd /d "%~dp0"
 rem Make freshly installed tools visible without reopening the window.
 set "PATH=%USERPROFILE%\.cargo\bin;%USERPROFILE%\.bun\bin;%PATH%"
 
-set HAS_LINK=1
+set HAS_LINK=0
+set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 
 echo.
 echo  CHIMERA - local dev
@@ -76,27 +79,29 @@ exit /b 1
 echo    Bun: OK
 
 echo.
-echo  [4/5] MSVC Build Tools... the browser app builds without them, cargo test and the CLI need them.
-where link.exe >nul 2>nul
+echo  [4/5] Visual Studio C++ toolchain (host builds: cargo needs it for everything on Windows)...
+call :try_msvc_env
 if not errorlevel 1 goto link_ok
-set HAS_LINK=0
-echo    link.exe NOT found.
+echo    Not found yet.
 where winget >nul 2>nul
 if errorlevel 1 goto link_manual
 choice /c YN /n /m "    Install Visual Studio Build Tools (C++ workload) now via winget? Large download, needs admin. [Y/N] "
 if errorlevel 2 goto link_skip
 winget install --accept-source-agreements --accept-package-agreements Microsoft.VisualStudio.2022.BuildTools --override "--add Microsoft.VisualStudio.Workload.VCTools --passive"
-goto link_done
+call :try_msvc_env
+if not errorlevel 1 goto link_ok
+echo    [warn] Installed, but the C++ environment could not be prepared in this window.
+echo           Close and reopen the window, then run dev.bat again.
+goto link_end
 :link_manual
 echo    winget not found. Install manually: https://aka.ms/vs/17/release/vs_BuildTools.exe
-echo    and tick the "Desktop development with C++" workload.
-goto link_done
+echo    (tick Desktop development with C++), then run dev.bat again.
+goto link_end
 :link_skip
-echo    Skipped. Install later if cargo test fails with a linker error.
-:link_done
+echo    Skipped. cargo test, the CLI and even the wasm build fail without the C++ toolchain.
 goto link_end
 :link_ok
-echo    link.exe: OK
+echo    MSVC toolchain: OK
 :link_end
 
 echo.
@@ -119,7 +124,7 @@ if errorlevel 1 goto tests_fail
 goto skip_tests
 :tests_skip
 echo.
-echo  [tests] SKIPPED - no MSVC linker. Install Build Tools first, then dev.bat test
+echo  [tests] SKIPPED - Visual Studio C++ Build Tools are missing. Install them, then dev.bat test
 goto skip_tests
 :tests_fail
 echo.
@@ -144,3 +149,18 @@ echo    cargo run --release -p chimera-cli -- transcribe "Привет! Как �
 echo.
 call bun run dev
 pause
+exit /b 0
+
+rem Find VS Build Tools via vswhere and load its environment (link.exe, LIB, INCLUDE).
+:try_msvc_env
+if not exist "%VSWHERE%" exit /b 1
+set "VSINSTALL="
+for /f "usebackq delims=" %%i in (`"%VSWHERE%" -latest -products * -requires Microsoft.VisualStudio.Workload.VCTools -property installationPath`) do set "VSINSTALL=%%i"
+if not defined VSINSTALL for /f "usebackq delims=" %%i in (`"%VSWHERE%" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VSINSTALL=%%i"
+if not defined VSINSTALL exit /b 1
+if not exist "%VSINSTALL%\VC\Auxiliary\Build\vcvars64.bat" exit /b 1
+call "%VSINSTALL%\VC\Auxiliary\Build\vcvars64.bat" >nul 2>&1
+where link.exe >nul 2>nul
+if errorlevel 1 exit /b 1
+set HAS_LINK=1
+exit /b 0
