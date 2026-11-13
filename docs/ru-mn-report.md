@@ -84,7 +84,7 @@ never run, not one test executed**. What was done instead:
   alignment holds for the shipped example sentences in both languages).
 
 **So this branch has no green test run.** On a machine with the toolchain, in order
-(Windows: double-click `dev.bat`, or `dev.bat test` to run test 1 first):
+(Windows: double-click `dev.bat` — it installs Rust, the wasm32 target and Bun itself; `dev.bat test` runs test 1 first):
 
 1. `cargo test --workspace` — expects the new `mongolian.rs`/`speech.rs` suites plus the existing
    Russian suite to pass; any failure is a hand-trace bug to report, not a mystery — open an

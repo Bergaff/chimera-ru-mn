@@ -55,8 +55,10 @@ bun run dev        # builds the wasm, then Vite on 127.0.0.1:5317
 bun run test       # wasm build, cargo test --workspace, bun test tests
 ```
 
-On Windows there is a double-click shortcut: `dev.bat` (checks Rust and Bun, adds the wasm32
-target, installs the JS dependencies, starts the app). `dev.bat test` runs
+On Windows there is a double-click shortcut: `dev.bat`. It installs whatever is missing —
+Rust (from static.rust-lang.org), the wasm32 target, Bun (from bun.sh) — offers to install the
+Visual Studio C++ Build Tools via winget (needed only for `cargo test` and the CLI, not for the
+browser app), installs the JS dependencies and starts the app. `dev.bat test` runs
 `cargo test --workspace` first and refuses to start if the suite is red.
 
 The AudioWorklet needs a secure context, so open it on localhost or over HTTPS (for example
