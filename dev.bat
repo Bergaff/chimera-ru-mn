@@ -79,19 +79,22 @@ exit /b 1
 echo    Bun: OK
 
 echo.
-echo  [4/5] Visual Studio C++ toolchain (host builds: cargo needs it for everything on Windows)...
+echo  [4/5] Visual Studio C++ toolchain (cargo needs it on Windows for host build scripts)...
 call :try_msvc_env
 if not errorlevel 1 goto link_ok
-echo    Not found yet.
+echo    MSVC C++ toolchain not usable yet.
 where winget >nul 2>nul
 if errorlevel 1 goto link_manual
-choice /c YN /n /m "    Install Visual Studio Build Tools (C++ workload) now via winget? Large download, needs admin. [Y/N] "
+choice /c YN /n /m "    Install or repair Visual Studio Build Tools (C++ workload) via winget now? [Y/N] "
 if errorlevel 2 goto link_skip
-winget install --accept-source-agreements --accept-package-agreements Microsoft.VisualStudio.2022.BuildTools --override "--add Microsoft.VisualStudio.Workload.VCTools --passive"
+winget install --force --accept-source-agreements --accept-package-agreements Microsoft.VisualStudio.2022.BuildTools --override "--quiet --add Microsoft.VisualStudio.Workload.VCTools --norestart"
 call :try_msvc_env
 if not errorlevel 1 goto link_ok
-echo    [warn] Installed, but the C++ environment could not be prepared in this window.
-echo           Close and reopen the window, then run dev.bat again.
+echo.
+echo    [fail] The C++ workload still does not come online. Paste EVERYTHING from [4/5]
+echo           onwards when asking for help - especially the [diag] lines above.
+echo    Manual repair in an ELEVATED terminal, then rerun dev.bat:
+echo      winget install --id Microsoft.VisualStudio.2022.BuildTools --force --override "--quiet --add Microsoft.VisualStudio.Workload.VCTools --norestart"
 goto link_end
 :link_manual
 echo    winget not found. Install manually: https://aka.ms/vs/17/release/vs_BuildTools.exe
@@ -153,14 +156,29 @@ exit /b 0
 
 rem Find VS Build Tools via vswhere and load its environment (link.exe, LIB, INCLUDE).
 :try_msvc_env
-if not exist "%VSWHERE%" exit /b 1
 set "VSINSTALL="
+if exist "%VSWHERE%" goto tme_vswhere
+echo    [diag] vswhere.exe NOT found at "%VSWHERE%" - the Build Tools installer did not register Visual Studio.
+goto tme_glob
+:tme_vswhere
 for /f "usebackq delims=" %%i in (`"%VSWHERE%" -latest -products * -requires Microsoft.VisualStudio.Workload.VCTools -property installationPath`) do set "VSINSTALL=%%i"
-if not defined VSINSTALL for /f "usebackq delims=" %%i in (`"%VSWHERE%" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VSINSTALL=%%i"
+if defined VSINSTALL goto tme_have
+echo    [diag] vswhere found no install with the VCTools workload. Installed Visual Studio products:
+"%VSWHERE%" -products * -property installationPath
+for /f "usebackq delims=" %%i in (`"%VSWHERE%" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VSINSTALL=%%i"
+if defined VSINSTALL goto tme_have
+echo    [diag] the VC tools component is missing too - the C++ workload is probably NOT installed.
+:tme_glob
+for /d %%e in (2017 2019 2022) do for /d %%d in (BuildTools Community Professional Enterprise) do if exist "%ProgramFiles(x86)%\Microsoft Visual Studio\%%e\%%d\VC\Auxiliary\Build\vcvars64.bat" set "VSINSTALL=%ProgramFiles(x86)%\Microsoft Visual Studio\%%e\%%d"
+:tme_have
 if not defined VSINSTALL exit /b 1
-if not exist "%VSINSTALL%\VC\Auxiliary\Build\vcvars64.bat" exit /b 1
-call "%VSINSTALL%\VC\Auxiliary\Build\vcvars64.bat" >nul 2>&1
-where link.exe >nul 2>nul
+echo    [diag] using Visual Studio at: "%VSINSTALL%"
+if not exist "%VSINSTALL%\VC\Auxiliary\Build\vcvars64.bat" goto tme_novars
+call "%VSINSTALL%\VC\Auxiliary\Build\vcvars64.bat"
+where link.exe
 if errorlevel 1 exit /b 1
 set HAS_LINK=1
 exit /b 0
+:tme_novars
+echo    [diag] found Visual Studio at "%VSINSTALL%" but VC\Auxiliary\Build\vcvars64.bat is MISSING - the C++ workload is not installed there.
+exit /b 1

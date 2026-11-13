@@ -60,7 +60,9 @@ Rust (from static.rust-lang.org), the wasm32 target, Bun (from bun.sh) — offer
 Visual Studio C++ Build Tools via winget if missing (cargo needs the MSVC linker for host
 build scripts on Windows, so this is required for everything Rust, including the wasm build),
 loads them into the window via vcvars64, installs the JS dependencies and starts the app. `dev.bat test` runs
-`cargo test --workspace` first and refuses to start if the suite is red.
+`cargo test --workspace` first and refuses to start if the suite is red. If winget reported the
+Build Tools as installed but `link.exe` is still not found, run `dev.bat` from the
+*Developer Command Prompt for VS 2022* — `link.exe` never appears on PATH by itself.
 
 The AudioWorklet needs a secure context, so open it on localhost or over HTTPS (for example
 `tailscale serve`). Vercel builds it with `vercel.json`.
