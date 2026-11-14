@@ -25,9 +25,18 @@ It sets up a portable Python/ffmpeg in .tools when needed and runs step 3 for yo
 
 4. Result: `wav/<id>.<ext>` (raw, untouched), `wav16k/<id>.wav` (16 kHz mono, for MFA),
    `sentences.tsv` (`id <TAB> text`), `intake-report.txt`.
-5. Recordings without transcripts appear with empty text in sentences.tsv — transcribe them
-   with `faster-whisper --language ru` (clean AI-dictor speech transcribes very well) and
-   paste the text in, then eyeball a few lines.
+5. Recordings without transcripts appear with empty text in sentences.tsv. On Windows, drag
+   the corpus folder (the one with sentences.tsv) onto `ru-transcribe.bat` in the repo root —
+   it creates .tools\whisper-venv with faster-whisper, asks for a model size
+   (S/M/L, default M; the download goes into .tools\hf), transcribes the empty rows and
+   checkpoints after every file. CLI equivalent:
+
+   ```sh
+   python tools/ru/transcribe.py --corpus "G:\datasets\ru" --model medium
+   ```
+
+   (clean AI-dictor speech transcribes very well; eyeball the results and fix rare words
+   in place — the previous sentences.tsv is kept as sentences.tsv.bak)
 6. Next: MFA alignment with the Russian acoustic model (same pattern as tools/tsp/setup.sh +
    align.sh, but with the GlobalPhone-based Russian model) → `alignment.tsv.gz` →
    `chimera compare ru`. See docs/realism-plan.md (Phases 0–1).
