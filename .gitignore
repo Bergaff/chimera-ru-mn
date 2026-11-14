@@ -17,3 +17,7 @@ package-lock.json
 
 # reference audio corpora are never committed (TSP convention): raw files live outside git
 corpus/
+
+# Python
+__pycache__/
+*.pyc
