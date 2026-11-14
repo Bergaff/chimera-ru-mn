@@ -2,6 +2,10 @@
 
 Raw audio is **never committed** (same convention as tools/tsp: derived tables only).
 
+On Windows you can skip the command line: double-click `ru-corpus.bat` in the repo root and
+answer the two prompts — it sets up a portable Python/ffmpeg in .tools when needed and runs
+step 3 for you.
+
 ## Workflow
 
 1. Put the audio anywhere (any nesting, any of .wav/.flac/.mp3/.m4a/.ogg/.aac/.wma).

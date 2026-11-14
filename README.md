@@ -66,6 +66,14 @@ dependencies and starts the app. `dev.bat test` runs `cargo test --workspace` fi
 to start if the suite is red. If the Build Tools are installed but `link.exe` is still not found,
 run `dev.bat` from the *Developer Command Prompt for VS 2022*.
 
+For the Russian reference corpus (your own dictor audio, kept out of git) there is
+`ru-corpus.bat`: double-click it, paste the folder with the audio and (optionally) a
+destination, and it collects the files and their sidecar transcripts into
+`corpus\ru\` (or the folder you typed) and writes `sentences.tsv`. It sets up a portable
+Python (`.tools\python`) and, only if you want the 16 kHz conversion for MFA, a portable
+ffmpeg (`.tools\ffmpeg`) when they are missing; nothing is installed system-wide or on
+drive C:. See [tools/ru/README.md](tools/ru/README.md).
+
 The AudioWorklet needs a secure context, so open it on localhost or over HTTPS (for example
 `tailscale serve`). Vercel builds it with `vercel.json`.
 
