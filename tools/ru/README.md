@@ -37,8 +37,22 @@ It sets up a portable Python/ffmpeg in .tools when needed and runs step 3 for yo
 
    (clean AI-dictor speech transcribes very well; eyeball the results and fix rare words
    in place — the previous sentences.tsv is kept as sentences.tsv.bak)
-6. Next: MFA alignment with the Russian acoustic model (same pattern as tools/tsp/setup.sh +
-   align.sh, but with the GlobalPhone-based Russian model) → `alignment.tsv.gz` →
-   `chimera compare ru`. See docs/realism-plan.md (Phases 0–1).
+6. Then prepare for alignment (drag the corpus folder onto `ru-prepare.bat` in the repo root,
+   or):
+
+   ```sh
+   python tools/ru/convert16k.py --corpus "G:\datasets\ru"   # 16 kHz mono, PyAV — no ffmpeg needed
+   python tools/ru/normalize.py   --corpus "G:\datasets\ru"   # sentences.mfa.tsv (numbers/symbols → words)
+   ```
+
+   The normalizer writes a separate `sentences.mfa.tsv` (your `sentences.tsv` is untouched),
+   expands digits to Russian words (`690` → «шестьсот девяносто», `197,60` → «сто девяносто
+   семь целых шесть десятых», `2024 год` → «две тысячи двадцать четвёртый год», `19 января`
+   → «девятнадцатого января», `70%` → «семьдесят процентов»), and lists rows that look
+   non-Russian (excluded — e.g. the English Raid-sponsor take) or contain long digit runs
+   (check whether a phone number is meant to be read digit-by-digit).
+7. Next: MFA alignment with the Russian MFA acoustic model v3.1.0 + Russian MFA dictionary
+   v3.1.0 (CC BY 4.0; v3.1.0 G2P for out-of-dictionary words like brand names) →
+   `alignment.tsv.gz` → `chimera compare ru`. See docs/realism-plan.md (Phases 0–1).
 
 Ids are Latin slugs (filenames transliterated from Cyrillic), unique with `-2`, `-3` suffixes.
