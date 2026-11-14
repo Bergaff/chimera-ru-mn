@@ -16,6 +16,8 @@ if not exist "%TOOLS_DIR%" mkdir "%TOOLS_DIR%"
 set CONV=0
 set FFMPEG=
 set PY=
+set "SRC="
+set "DST_IN="
 
 echo.
 echo  CHIMERA - Russian corpus intake
@@ -30,14 +32,14 @@ echo    No Python 3 found. I can install a portable copy into %TOOLS_DIR%\python
 echo    (~11 MB, no admin, drive C: untouched).
 choice /c YN /n /m "    Download Python 3.12.10 now? [Y/N] "
 if errorlevel 2 goto py_missing
-echo    downloading python-3.12.10-embed-amd64.zip ...
+echo    downloading python-3.12.10-embed-amd64.zip (~11 MB, usually seconds) ...
 where curl.exe >nul 2>nul
 if errorlevel 1 goto py_dl_ps
-curl.exe -sSfL -o "%TOOLS_DIR%\python-embed.zip" https://www.python.org/ftp/python/3.12.10/python-3.12.10-embed-amd64.zip
+curl.exe -L --connect-timeout 10 --max-time 300 --progress-bar -o "%TOOLS_DIR%\python-embed.zip" https://www.python.org/ftp/python/3.12.10/python-3.12.10-embed-amd64.zip
 if errorlevel 1 goto py_fail
 goto py_expand
 :py_dl_ps
-powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -UseBasicParsing -Uri 'https://www.python.org/ftp/python/3.12.10/python-3.12.10-embed-amd64.zip' -OutFile '%TOOLS_DIR%\python-embed.zip'"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -UseBasicParsing -TimeoutSec 300 -Uri 'https://www.python.org/ftp/python/3.12.10/python-3.12.10-embed-amd64.zip' -OutFile '%TOOLS_DIR%\python-embed.zip'"
 if errorlevel 1 goto py_fail
 :py_expand
 if exist "%TOOLS_DIR%\python" rmdir /s /q "%TOOLS_DIR%\python"
@@ -60,16 +62,16 @@ echo    using python: %PY%
 
 rem --- 2) folders ----------------------------------------------------------
 echo.
-set /p "SRC=Folder with your audio (e.g. D:\dictors): "
+set /p "SRC=Folder with your audio (paste the full path, e.g. D:\dictors): "
 for /f "tokens=* delims= " %%i in ("%SRC%") do set "SRC=%%i"
 set "SRC=%SRC:"=%"
 if not defined SRC goto bad_src
 if not exist "%SRC%" goto bad_src
 set "DST=%CD%\corpus\ru"
-set /p "DST_IN=Where to put the corpus [%CD%\corpus\ru]: "
+set /p "DST_IN=Where to put the corpus [%CD%\corpus\ru] (Enter = default): "
 for /f "tokens=* delims= " %%i in ("%DST_IN%") do set "DST_IN=%%i"
 set "DST_IN=%DST_IN:"=%"
-if defined DST_IN set "DST=%DST_IN%"
+if not "%DST_IN%"=="" set "DST=%DST_IN%"
 echo    source : %SRC%
 echo    corpus : %DST%
 goto py_done
@@ -82,7 +84,9 @@ exit /b 1
 rem --- 3) ffmpeg, only for 16 kHz conversion ------------------------------
 where ffmpeg >nul 2>nul
 if not errorlevel 1 set "FFMPEG=ffmpeg"
-if not exist "%TOOLS_DIR%\ffmpeg\bin\ffmpeg.exe" goto ff_no_local
+if exist "%TOOLS_DIR%\ffmpeg\bin\ffmpeg.exe" goto ff_have_local
+goto ff_no_local
+:ff_have_local
 set "FFMPEG=%TOOLS_DIR%\ffmpeg\bin\ffmpeg.exe"
 set "PATH=%TOOLS_DIR%\ffmpeg\bin;%PATH%"
 goto ff_ready
@@ -92,24 +96,25 @@ echo    ffmpeg NOT found. Needed only for the 16 kHz mono conversion for MFA;
 echo    the basic intake works without it.
 choice /c YN /n /m "    Download a portable ffmpeg into %TOOLS_DIR%\ffmpeg now? [Y/N] "
 if errorlevel 2 goto conv_done
+echo    downloading ffmpeg (~100 MB - watch the progress bar; Ctrl+C aborts) ...
 where curl.exe >nul 2>nul
 if errorlevel 1 goto ff_dl_ps
-curl.exe -sSfL -o "%TOOLS_DIR%\ffmpeg.zip" https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip
+curl.exe -L --connect-timeout 10 --max-time 900 --progress-bar -o "%TOOLS_DIR%\ffmpeg.zip" https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip
 if errorlevel 1 goto ff_dl_ps_fallback
 goto ff_expand
 :ff_dl_ps
-powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -UseBasicParsing -Uri 'https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip' -OutFile '%TOOLS_DIR%\ffmpeg.zip'"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -UseBasicParsing -TimeoutSec 900 -Uri 'https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip' -OutFile '%TOOLS_DIR%\ffmpeg.zip'"
 if errorlevel 1 goto ff_dl_ps_fallback
 goto ff_expand
 :ff_dl_ps_fallback
 echo    gyan.dev failed; trying the BtbN GitHub mirror ...
 where curl.exe >nul 2>nul
 if errorlevel 1 goto ff_mirror_ps
-curl.exe -sSfL -o "%TOOLS_DIR%\ffmpeg.zip" https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip
+curl.exe -L --connect-timeout 10 --max-time 900 --progress-bar -o "%TOOLS_DIR%\ffmpeg.zip" https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip
 if errorlevel 1 goto ff_fail
 goto ff_expand
 :ff_mirror_ps
-powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -UseBasicParsing -Uri 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip' -OutFile '%TOOLS_DIR%\ffmpeg.zip'"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -UseBasicParsing -TimeoutSec 900 -Uri 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip' -OutFile '%TOOLS_DIR%\ffmpeg.zip'"
 if errorlevel 1 goto ff_fail
 :ff_expand
 if exist "%TOOLS_DIR%\ffmpeg-tmp" rmdir /s /q "%TOOLS_DIR%\ffmpeg-tmp"
