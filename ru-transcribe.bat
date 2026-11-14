@@ -85,11 +85,20 @@ echo    model: %MODEL% (downloads on first run, into .tools\hf)
 echo.
 echo    running: %VP% tools\ru\transcribe.py --corpus "%DST%" --model %MODEL%
 "%VP%" tools\ru\transcribe.py --corpus "%DST%" --model %MODEL%
+if errorlevel 1 goto run_fail
 echo.
 echo  Done. Open corpus\ru\sentences.tsv and eyeball the texts (auto-transcripts are
 echo  usually good on clean AI narration, but rare words need a human eye).
 pause
 exit /b 0
+
+:run_fail
+echo.
+echo    [error] transcription crashed - the traceback above is the real error.
+echo    sentences.tsv is checkpointed per file, so already-done rows are kept.
+echo    send the traceback to the developer; nothing else to clean up.
+pause
+exit /b 1
 
 :bad_dst
 echo    [error] no corpus found at: %DST%

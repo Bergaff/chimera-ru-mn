@@ -15,10 +15,32 @@ import re
 import sys
 from pathlib import Path
 
+os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
+
 REPO = Path(__file__).resolve().parents[2]
 os.environ.setdefault("HF_HOME", str(REPO / ".tools" / "hf"))
 
 AUDIO_EXTS = (".wav", ".flac", ".mp3", ".m4a", ".ogg", ".aac", ".wma")
+
+
+def decode_audio(path):
+    """Decode to 16 kHz mono float32 numpy — same as faster-whisper's decode_audio
+    but without the metadata_errors kwarg that older PyAV builds don't accept."""
+    import av
+    import numpy as np
+
+    with av.open(str(path)) as container:
+        stream = container.streams.audio[0]
+        resampler = av.AudioResampler(format="flt", layout="mono", rate=16000)
+        chunks = []
+        for frame in container.decode(stream):
+            for rf in resampler.resample(frame):
+                chunks.append(rf.to_ndarray().reshape(1, -1))
+        for rf in resampler.resample(None):  # flush
+            chunks.append(rf.to_ndarray().reshape(1, -1))
+    if not chunks:
+        raise RuntimeError(f"no audio decoded from {path}")
+    return np.concatenate(chunks, axis=1)[0].astype(np.float32)
 
 
 def main():
@@ -68,7 +90,7 @@ def main():
             continue
         print(f"  [{done + 1}/{len(todo)}] transcribing {rid} ...", flush=True)
         segments, _ = model.transcribe(
-            str(audio), language=args.language, beam_size=5, vad_filter=False)
+            decode_audio(audio), language=args.language, beam_size=5, vad_filter=False)
         text = " ".join(seg.text.strip() for seg in segments)
         text = re.sub(r"\s+", " ", text).replace("\t", " ").strip()
         rows[i][1] = text
