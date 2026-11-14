@@ -15,7 +15,7 @@ With --convert and ffmpeg on PATH, also produces <dst>/wav16k/<id>.wav
 Usage:  python tools/ru/intake.py --src "D:\\dictors" [--dst "G:\\datasets\\ru"] [--convert]
         (defaults: --dst = <repo>/corpus/ru)
 """
-import argparse, json, re, shutil, subprocess, sys
+import argparse, json, os, re, shutil, subprocess, sys
 from pathlib import Path
 
 AUDIO = {".wav", ".flac", ".mp3", ".m4a", ".ogg", ".aac", ".wma"}
@@ -94,6 +94,14 @@ def main():
         sys.exit(f"not a folder: {src}")
     repo = Path(__file__).resolve().parents[2]
     dst = Path(args.dst) if args.dst else repo / "corpus" / "ru"
+    src_r, dst_r = src.resolve(), dst.resolve()
+    try:
+        inside = src_r == dst_r or dst_r.is_relative_to(src_r)
+    except AttributeError:  # python < 3.9
+        inside = src_r == dst_r or str(dst_r).startswith(str(src_r) + os.sep)
+    if inside:
+        sys.exit(f"refusing to write the corpus inside the source folder ({dst_r}); "
+                 "pass --dst somewhere else or omit it (default: <repo>/corpus/ru)")
 
     files = sorted(p for p in src.rglob("*") if p.is_file() and p.suffix.lower() in AUDIO)
     if not files:

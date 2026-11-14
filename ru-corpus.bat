@@ -27,6 +27,27 @@ set "SRC=%~1"
 if not exist "%SRC%" goto bad_src
 set "DST=%~2"
 if not defined DST set "DST=%CD%\corpus\ru"
+if "%SRC:~-1%"=="\" set "SRC=%SRC:~0,-1%"
+if "%DST:~-1%"=="\" set "DST=%DST:~0,-1%"
+if /i "%DST%"=="%SRC%" goto dst_inside
+set "DST_CHK=%DST%\"
+if /i not "%DST_CHK:*%SRC%\=%"=="%DST_CHK%" goto dst_inside
+goto dst_ok
+
+:dst_inside
+echo    [warn] destination would live INSIDE your audio folder - using the default instead.
+set "DST=%CD%\corpus\ru"
+if /i "%DST%"=="%SRC%" goto dst_refused
+set "DST_CHK=%DST%\"
+if /i not "%DST_CHK:*%SRC%\=%"=="%DST_CHK%" goto dst_refused
+goto dst_ok
+
+:dst_refused
+echo    [error] the source folder swallows the default corpus location; pass a destination outside of it.
+pause
+exit /b 1
+
+:dst_ok
 echo    source : %SRC%
 echo    corpus : %DST%
 
@@ -82,6 +103,7 @@ echo    ffmpeg NOT found. Needed only for the 16 kHz mono conversion for MFA;
 echo    the basic intake works without it.
 choice /c YN /n /m "    Download a portable ffmpeg into %TOOLS_DIR%\ffmpeg now? [Y/N] "
 if errorlevel 2 goto conv_done
+if exist "%TOOLS_DIR%\ffmpeg.zip" del /f "%TOOLS_DIR%\ffmpeg.zip"
 echo    downloading ffmpeg (~100 MB - watch the progress bar; Ctrl+C aborts) ...
 where curl.exe >nul 2>nul
 if errorlevel 1 goto ff_dl_ps
