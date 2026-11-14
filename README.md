@@ -67,9 +67,9 @@ to start if the suite is red. If the Build Tools are installed but `link.exe` is
 run `dev.bat` from the *Developer Command Prompt for VS 2022*.
 
 For the Russian reference corpus (your own dictor audio, kept out of git) there is
-`ru-corpus.bat`: double-click it, paste the folder with the audio and (optionally) a
-destination, and it collects the files and their sidecar transcripts into
-`corpus\ru\` (or the folder you typed) and writes `sentences.tsv`. It sets up a portable
+`ru-corpus.bat`: drag your folder of audio onto it (corpus lands in `corpus\ru\`, or pass a
+destination as the second argument), and it collects the files and their sidecar transcripts and
+writes `sentences.tsv`. Double-click shows the usage help. It sets up a portable
 Python (`.tools\python`) and, only if you want the 16 kHz conversion for MFA, a portable
 ffmpeg (`.tools\ffmpeg`) when they are missing; nothing is installed system-wide or on
 drive C:. See [tools/ru/README.md](tools/ru/README.md).

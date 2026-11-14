@@ -1,12 +1,13 @@
 @echo off
-rem  CHIMERA - Russian reference corpus intake. Double-click to run: asks where the
-rem  audio lives and where to put the corpus, makes sure Python exists (system-wide,
-rem  or a portable copy in .tools\python), then runs tools\ru\intake.py.
-rem  Nothing installs to drive C:
-rem    .tools\python\   portable Python 3.12.10 (embeddable), only if no system Python
-rem    .tools\ffmpeg\   portable ffmpeg essentials, only for 16 kHz conversion (for MFA)
-rem  Output: <corpus>\wav\ (copies), <corpus>\sentences.tsv, intake-report.txt,
-rem  and with --convert a <corpus>\wav16k\ (16 kHz mono) for MFA.
+rem  CHIMERA - Russian reference corpus intake.
+rem
+rem  USAGE (no typing needed):
+rem    1. Drag your folder of audio onto ru-corpus.bat  (corpus goes to <repo>\corpus\ru)
+rem    2. Or run:  ru-corpus.bat "I:\path\to\audio" "G:\datasets\ru"   (destination optional)
+rem    3. Double-clicking shows this help.
+rem
+rem  Nothing installs to drive C: - portable Python (.tools\python) and portable ffmpeg
+rem  (.tools\ffmpeg) are downloaded there only if missing, and only if you say yes.
 setlocal EnableExtensions
 chcp 65001 >nul
 cd /d "%~dp0"
@@ -16,12 +17,18 @@ if not exist "%TOOLS_DIR%" mkdir "%TOOLS_DIR%"
 set CONV=0
 set FFMPEG=
 set PY=
-set "SRC="
-set "DST_IN="
 
 echo.
 echo  CHIMERA - Russian corpus intake
 echo  ===============================
+
+if "%~1"=="" goto usage
+set "SRC=%~1"
+if not exist "%SRC%" goto bad_src
+set "DST=%~2"
+if not defined DST set "DST=%CD%\corpus\ru"
+echo    source : %SRC%
+echo    corpus : %DST%
 
 rem --- 1) Python ----------------------------------------------------------
 if exist "%TOOLS_DIR%\python\python.exe" set "PY=%TOOLS_DIR%\python\python.exe"
@@ -60,28 +67,7 @@ exit /b 1
 :py_ok
 echo    using python: %PY%
 
-rem --- 2) folders ----------------------------------------------------------
-echo.
-set /p "SRC=Folder with your audio (paste the full path, e.g. D:\dictors): "
-for /f "tokens=* delims= " %%i in ("%SRC%") do set "SRC=%%i"
-set "SRC=%SRC:"=%"
-if not defined SRC goto bad_src
-if not exist "%SRC%" goto bad_src
-set "DST=%CD%\corpus\ru"
-set /p "DST_IN=Where to put the corpus [%CD%\corpus\ru] (Enter = default): "
-for /f "tokens=* delims= " %%i in ("%DST_IN%") do set "DST_IN=%%i"
-set "DST_IN=%DST_IN:"=%"
-if not "%DST_IN%"=="" set "DST=%DST_IN%"
-echo    source : %SRC%
-echo    corpus : %DST%
-goto py_done
-:bad_src
-echo    [error] that folder does not exist. Re-run and paste a valid path.
-pause
-exit /b 1
-:py_done
-
-rem --- 3) ffmpeg, only for 16 kHz conversion ------------------------------
+rem --- 2) ffmpeg, only for 16 kHz conversion ------------------------------
 where ffmpeg >nul 2>nul
 if not errorlevel 1 set "FFMPEG=ffmpeg"
 if exist "%TOOLS_DIR%\ffmpeg\bin\ffmpeg.exe" goto ff_have_local
@@ -138,7 +124,7 @@ if errorlevel 2 goto conv_done
 set CONV=1
 :conv_done
 
-rem --- 4) run the intake ---------------------------------------------------
+rem --- 3) run the intake ---------------------------------------------------
 echo.
 if "%CONV%"=="1" goto run_conv
 echo    running: %PY% tools\ru\intake.py --src "%SRC%" --dst "%DST%"
@@ -151,6 +137,23 @@ echo    running: %PY% tools\ru\intake.py --src "%SRC%" --dst "%DST%" --convert
 echo.
 echo  Done. Your corpus is in: %DST%
 echo  Next: check sentences.tsv there (empty text = needs transcription), then see tools\ru\README.md
+pause
+exit /b 0
+
+:bad_src
+echo    [error] that folder does not exist: %SRC%
+pause
+exit /b 1
+
+:usage
+echo  No folder given. How to use:
+echo.
+echo  1. Drag your folder of audio ONTO this ru-corpus.bat file, or
+echo  2. Run from a terminal:
+echo       ru-corpus.bat "I:\химера\ru_voice"
+echo       ru-corpus.bat "I:\химера\ru_voice" "G:\datasets\ru"   (destination optional)
+echo.
+echo  Corpus defaults to: %CD%\corpus\ru  (gitignored; raw audio never enters git)
 pause
 exit /b 0
 

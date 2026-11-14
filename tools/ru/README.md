@@ -2,9 +2,10 @@
 
 Raw audio is **never committed** (same convention as tools/tsp: derived tables only).
 
-On Windows you can skip the command line: double-click `ru-corpus.bat` in the repo root and
-answer the two prompts — it sets up a portable Python/ffmpeg in .tools when needed and runs
-step 3 for you.
+On Windows you can skip the command line: drag your audio folder onto `ru-corpus.bat` in the
+repo root (the corpus goes to `corpus\ru`; pass a different destination as the second argument:
+`ru-corpus.bat "D:\dictors" "G:\datasets\ru"`). Double-clicking the bat shows the usage help.
+It sets up a portable Python/ffmpeg in .tools when needed and runs step 3 for you.
 
 ## Workflow
 
