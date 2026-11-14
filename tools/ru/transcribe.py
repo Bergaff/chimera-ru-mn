@@ -23,6 +23,12 @@ os.environ.setdefault("HF_HOME", str(REPO / ".tools" / "hf"))
 AUDIO_EXTS = (".wav", ".flac", ".mp3", ".m4a", ".ogg", ".aac", ".wma")
 
 
+def write_tsv(tsv, rows):
+    tmp = tsv.parent / (tsv.name + ".tmp")
+    tmp.write_text("".join(f"{rid}\t{text}\n" for rid, text in rows), encoding="utf-8")
+    os.replace(tmp, tsv)
+
+
 def decode_audio(path):
     """Decode to 16 kHz mono float32 numpy — same as faster-whisper's decode_audio
     but without the metadata_errors kwarg that older PyAV builds don't accept."""
@@ -49,6 +55,8 @@ def main():
     ap.add_argument("--model", default="medium", choices=["small", "medium", "large-v3"])
     ap.add_argument("--language", default="ru")
     ap.add_argument("--all", action="store_true", help="re-transcribe rows that already have text")
+    ap.add_argument("--status", action="store_true",
+                    help="print done/pending rows and exit (no model load)")
     args = ap.parse_args()
 
     corpus = Path(args.corpus)
@@ -69,6 +77,19 @@ def main():
         rows.append([rid, text])
 
     todo = [i for i, (rid, text) in enumerate(rows) if args.all or not text]
+    done_ids = [rows[i][0] for i in range(len(rows)) if i not in todo]
+    pending_ids = [rows[i][0] for i in todo]
+
+    if args.status:
+        print(f"corpus:  {corpus}")
+        print(f"total:   {len(rows)}")
+        print(f"done:    {len(done_ids)}" + ("  (" + ", ".join(done_ids) + ")" if done_ids else ""))
+        print(f"pending: {len(pending_ids)}" + ("  (" + ", ".join(pending_ids) + ")" if pending_ids else ""))
+        return
+
+    print(f"already done: {len(rows) - len(todo)}/{len(rows)}"
+          + (f"; pending: {', '.join(pending_ids)}" if pending_ids else ""))
+
     if not todo:
         print("nothing to do: every row already has a transcript (use --all to redo)")
         return
@@ -78,8 +99,7 @@ def main():
     print(f"loading faster-whisper model '{args.model}' (downloads on first run) ...")
     model = WhisperModel(args.model, device="cpu", compute_type="int8")
 
-    tsv.with_suffix(".tsv.bak").write_text(
-        "".join(f"{rid}\t{text}\n" for rid, text in rows), encoding="utf-8")
+    write_tsv(tsv.with_suffix(".tsv.bak"), rows)
 
     done = 0
     for i in todo:
@@ -96,7 +116,8 @@ def main():
         rows[i][1] = text
         done += 1
         # checkpoint after every file so Ctrl+C loses nothing
-        tsv.write_text("".join(f"{r}\t{t}\n" for r, t in rows), encoding="utf-8")
+        write_tsv(tsv, rows)
+        print(f"  [ok] {rid}: {len(text)} chars", flush=True)
 
     print()
     print(f"done: {done}/{len(todo)} transcribed; backup of the old file: {tsv}.bak")

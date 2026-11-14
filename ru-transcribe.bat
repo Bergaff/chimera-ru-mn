@@ -48,6 +48,9 @@ echo    creating venv in %VENV_DIR% ...
 if errorlevel 1 goto venv_fail
 :venv_ok
 echo    venv: %VP%
+echo    --- corpus status ---
+"%VP%" tools\ru\transcribe.py --status
+echo    ----------------------
 if not exist "%VENV_DIR%\installed.txt" goto pip_install
 echo    faster-whisper already installed (found installed.txt)
 goto model_pick
