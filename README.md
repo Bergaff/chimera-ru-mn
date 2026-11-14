@@ -56,13 +56,15 @@ bun run test       # wasm build, cargo test --workspace, bun test tests
 ```
 
 On Windows there is a double-click shortcut: `dev.bat`. It installs whatever is missing —
-Rust (from static.rust-lang.org), the wasm32 target, Bun (from bun.sh) — offers to install the
-Visual Studio C++ Build Tools via winget if missing (cargo needs the MSVC linker for host
-build scripts on Windows, so this is required for everything Rust, including the wasm build),
-loads them into the window via vcvars64, installs the JS dependencies and starts the app. `dev.bat test` runs
-`cargo test --workspace` first and refuses to start if the suite is red. If winget reported the
-Build Tools as installed but `link.exe` is still not found, run `dev.bat` from the
-*Developer Command Prompt for VS 2022* — `link.exe` never appears on PATH by itself.
+Rust (from static.rust-lang.org), the wasm32 target, Bun (from bun.sh) and, if you accept, the
+Visual Studio C++ Build Tools — **into the project folder** (`<repo>\.tools\`, gitignored), never
+to drive C: (cargo needs the MSVC linker for host build scripts on Windows, so the C++ Build
+Tools are required for everything Rust, including the wasm build). Already-installed
+system-wide tools are used as-is; `dev.bat local` ignores them and uses/installs the
+project-local ones. `dev.bat` then loads the toolchain via vcvars64, installs the JS
+dependencies and starts the app. `dev.bat test` runs `cargo test --workspace` first and refuses
+to start if the suite is red. If the Build Tools are installed but `link.exe` is still not found,
+run `dev.bat` from the *Developer Command Prompt for VS 2022*.
 
 The AudioWorklet needs a secure context, so open it on localhost or over HTTPS (for example
 `tailscale serve`). Vercel builds it with `vercel.json`.

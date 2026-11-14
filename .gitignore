@@ -11,3 +11,6 @@ public/shows/
 
 # the repo is built with Bun (bun.lock); npm lockfiles are local noise
 package-lock.json
+
+# local toolchains installed by dev.bat (several GB, machine-specific)
+.tools/
