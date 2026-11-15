@@ -7,8 +7,13 @@ chcp 65001 >nul
 cd /d "%~dp0"
 set "MFA_DIR=%CD%\.tools\mfa"
 set "ENV_DIR=%MFA_DIR%\env"
+set "PIXI_MFA=%CD%\.tools\pixi\bin\mfa.exe"
 set "MAMBA_ROOT_PREFIX=%MFA_DIR%\root"
 set "MFA_ROOT_DIR=%MFA_DIR%\cache"
+set "TOOLS_DIR=%CD%\.tools"
+set "VP=%TOOLS_DIR%\whisper-venv\Scripts\python.exe"
+set "MFABIN="
+set "MFAROUTE="
 
 echo.
 echo  CHIMERA - Russian corpus alignment (MFA)
@@ -18,19 +23,30 @@ if "%~1"=="" goto usage
 set "DST=%~1"
 if not exist "%DST%\sentences.mfa.tsv" goto bad_mfa
 if not exist "%DST%\wav16k" goto bad_mfa
-if not exist "%ENV_DIR%\Scripts\mfa.exe" goto no_env
+
+if exist "%ENV_DIR%\Scripts\mfa.exe" (set "MFABIN=%ENV_DIR%\Scripts\mfa.exe" & set "MFAROUTE=micromamba")
+if exist "%PIXI_MFA%" if not defined MFABIN (set "MFABIN=%PIXI_MFA%" & set "MFAROUTE=pixi")
+if not defined MFABIN goto no_env
+echo    mfa route: %MFAROUTE%  (%MFABIN%)
+
+if exist "%VP%" goto py_ok
+for /f "usebackq delims=" %%i in (`where python 2^>nul`) do (set "VP=%%i" & goto py_ok)
+echo    [error] no python found for the alignment collector (whisper venv missing?).
+pause
+exit /b 1
+:py_ok
+echo    python (collector): %VP%
 
 echo    [1/3] building the MFA corpus (one folder per utterance) ...
-"%ENV_DIR%\Scripts\python.exe" tools\ru\align.py prepare "%DST%" "%DST%\mfa\corpus"
+"%VP%" tools\ru\align.py prepare "%DST%" "%DST%\mfa\corpus"
 if errorlevel 1 goto step_fail
 echo.
 echo    [2/3] mfa align (Russian acoustic model + dictionary; dither 0) ...
-call "%ENV_DIR%\Scripts\activate.bat" >nul
-mfa align -q --clean -c "tools\ru\mfa.yaml" -j "%NUMBER_OF_PROCESSORS%" --output_format json "%DST%\mfa\corpus" russian_mfa russian_mfa "%DST%\mfa\aligned"
+"%MFABIN%" align -q --clean -c "tools\ru\mfa.yaml" -j "%NUMBER_OF_PROCESSORS%" --output_format json "%DST%\mfa\corpus" russian_mfa russian_mfa "%DST%\mfa\aligned"
 if errorlevel 1 goto step_fail
 echo.
 echo    [3/3] collecting word/phone tiers into tools\ru\alignment.tsv.gz ...
-"%ENV_DIR%\Scripts\python.exe" tools\ru\align.py collect "%DST%\mfa\aligned" "%DST%"
+"%VP%" tools\ru\align.py collect "%DST%\mfa\aligned" "%DST%"
 if errorlevel 1 goto step_fail
 echo.
 echo  Done. Derived alignment is at tools\ru\alignment.tsv.gz (safe to commit;
@@ -39,13 +55,13 @@ pause
 exit /b 0
 
 :no_env
-echo    [error] MFA env not found in .tools\mfa - run setup-ru.bat first (double-click it).
+echo    [error] MFA not installed yet. Run setup-ru.bat (double-click) OR
+echo    setup-ru-pixi.bat (GitHub route, works where conda-forge is blocked).
 pause
 exit /b 1
 
 :bad_mfa
-echo    [error] not a prepared corpus folder (expected sentences.mfa.tsv and wav16k\
- inside): %DST%
+echo    [error] not a prepared corpus folder (expected sentences.mfa.tsv and wav16k inside): %DST%
 echo    run ru-prepare.bat on it first.
 pause
 exit /b 1
@@ -60,8 +76,8 @@ exit /b 1
 
 :usage
 echo  How to use:
-echo    1. Run setup-ru.bat once (double-click) to install MFA into .tools\mfa, then
-echo    2. Drag your corpus folder (with sentences.mfa.tsv and wav16k\) ONTO this file, or
-echo    3. Run from a terminal:  align-ru.bat "I:\chemera\corpus\ru"
+echo    1. Run setup-ru.bat once (or setup-ru-pixi.bat if conda-forge is blocked),
+echo       then drag your corpus folder (with sentences.mfa.tsv and wav16k\) ONTO this file, or
+echo    2. Run from a terminal:  align-ru.bat "I:\chemera\corpus\ru"
 pause
 exit /b 0

@@ -73,6 +73,13 @@ It sets up a portable Python/ffmpeg in .tools when needed and runs step 3 for yo
    Derived table, no audio — intended to be committed, like tools/tsp/alignment.tsv.gz.
    Utterances MFA can't align are listed at the end (OOV brand names; the English take was
    already excluded from sentences.mfa.tsv).
+   If conda-forge hosts are unreachable/stubbed on your network (the error shows an empty
+   channel: "python does not exist" on all mirrors), use the GitHub route instead —
+   double-click `setup-ru-pixi.bat`: pixi v0.84.2 from GitHub releases installs MFA from the
+   conda-forge OCI mirror on ghcr.io (`.tools\pixi`, nothing on drive C:). Diagnostics:
+   double-click `ru-mfa-probe.bat` (deep byte-range probes + micromamba's own view via a
+   verbose dry-run) and paste the output. `align-ru.bat` auto-detects whichever route is
+   installed. Either way `MFA_ROOT_DIR=.tools\mfa\cache` keeps the model cache in-project.
    Note: if your repo lives under a non-ASCII path (e.g. `I:\химера`) and kaldi crashes
    with strange file errors, map a pure-ASCII drive once with `subst X: I:\химера` and run
    everything from `X:\` instead.
