@@ -56,9 +56,11 @@ It sets up a portable Python/ffmpeg in .tools when needed and runs step 3 for yo
    Russian MFA acoustic model v3.1.0 + dictionary v3.1.0 (CC BY 4.0; v3.1.0 G2P for
    out-of-dictionary words like brand names, best effort). The conda-forge channel is
    tried in order — upstream (conda.anaconda.org), the official https://prefix.dev/conda-forge
-   mirror, and the tuna.tsinghua.edu.cn one — and a probe summary is printed first, so if
-   everything fails the window tells you which host is reachable (proxy?). Then drag the
-   corpus folder onto `align-ru.bat`:
+   mirror, and the tuna.tsinghua.edu.cn one. Each attempt starts with a wiped repodata
+   cache (.tools\mfa\root\pkgs\cache) — a poisoned cache from a broken first run makes
+   every channel look empty. A probe summary prints the actual first bytes each host
+   returns, so if everything fails the window tells you which host serves what
+   (proxy/captive portal?). Then drag the corpus folder onto `align-ru.bat`:
 
    ```sh
    # or:  align-ru.bat "I:\path\corpus\ru"

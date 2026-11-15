@@ -4,6 +4,8 @@ rem  micromamba (win-64) + montreal-forced-aligner 3.4.3 + Russian MFA acoustic
 rem  model v3.1.0 (fallback v2.0.0) + Russian MFA dictionary (v3.1.0, fallback v2.0.0)
 rem  + Russian MFA G2P v3.1.0 (optional). Everything lands in .tools\mfa - nothing on C:.
 rem  conda-forge mirrors are tried in order: upstream -> prefix.dev -> TUNA.
+rem  The micromamba repodata cache is wiped before EVERY attempt: a poisoned
+rem  cache (e.g. from a broken first run) makes every channel look empty.
 setlocal EnableExtensions
 chcp 65001 >nul
 cd /d "%~dp0"
@@ -32,23 +34,33 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager
 if errorlevel 1 goto mamba_fail
 :have_mamba
 echo    micromamba: %MAMBA_EXE%
-
-rem --- 1b) channel probe (diagnostics only) -----------------------------------
 echo.
-echo    probing conda-forge mirrors (best effort, tells us which route works) ...
+echo    micromamba info (platform - root prefix - config):
+"%MAMBA_EXE%" info
+
+rem --- 1b) reachability + content sniff (diagnostics only) --------------------
+echo.
+echo    channel probes (what does the network ACTUALLY return?) ...
 where curl.exe >nul 2>nul
 if errorlevel 1 goto probes_done
-curl.exe -s -I --head --connect-timeout 6 --max-time 15 -o NUL -w "      conda.anaconda.org  -> HTTP %%{http_code}\n" https://conda.anaconda.org/conda-forge/win-64/repodata.json
-curl.exe -s -I --head --connect-timeout 6 --max-time 15 -o NUL -w "      prefix.dev         -> HTTP %%{http_code}\n" https://prefix.dev/conda-forge/win-64/repodata.json
-curl.exe -s -I --head --connect-timeout 6 --max-time 15 -o NUL -w "      tuna tsinghua      -> HTTP %%{http_code}\n" https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge/win-64/repodata.json
+call :sniff https://conda.anaconda.org/conda-forge/win-64/repodata.json conda.anaconda.org
+call :sniff https://prefix.dev/conda-forge/win-64/repodata.json prefix.dev
+call :sniff https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge/win-64/repodata.json tuna
+del "%MFA_DIR%\probe-*.bin" >nul 2>nul
 :probes_done
+goto probes_ok
 
-rem --- 2) conda env with MFA (mirror cascade) ----------------------------------
+:sniff
+echo    --- %2 ---
+curl.exe -s -r 0-400 -o "%MFA_DIR%\probe-%2.bin" -w "      http_code=%%{http_code} type=%%{content_type} bytes_downloaded=%%{size_download}\n" "%1"
+if exist "%MFA_DIR%\probe-%2.bin" powershell -NoProfile -Command "$b=[IO.File]::ReadAllBytes('%MFA_DIR%\probe-%2.bin'); $t=[Text.Encoding]::UTF8.GetString($b); $t=($t -replace '[^ -~]','.'); Write-Host ('      first bytes: ' + $t.Substring(0, [Math]::Min(100, $t.Length)))"
+exit /b 0
+
+:probes_ok
+rem --- 2) conda env with MFA (mirror cascade, fresh cache every time) ---------
 if exist "%ENV_DIR%\Scripts\mfa.exe" goto mfa_env_ready
 echo.
 echo    creating env: montreal-forced-aligner 3.4.3 + python 3.11 ...
-echo    if the upstream channel is blocked, mirrors kick in automatically
-echo    (prefix.dev, then tuna tsinghua). Deleting any stale half-made env first.
 if exist "%ENV_DIR%" rmdir /s /q "%ENV_DIR%"
 call :try_channel conda-forge
 if not errorlevel 1 goto mfa_env_ready
@@ -63,6 +75,7 @@ if not errorlevel 1 goto mfa_env_ready
 goto env_fail
 :try_channel
 echo    channel: %1
+if exist "%MAMBA_ROOT_PREFIX%\pkgs\cache" rmdir /s /q "%MAMBA_ROOT_PREFIX%\pkgs\cache"
 "%MAMBA_EXE%" create -y -p "%ENV_DIR%" -c "%1" montreal-forced-aligner=3.4.3 python=3.11
 exit /b %errorlevel%
 :mfa_env_ready
@@ -103,8 +116,9 @@ pause
 exit /b 1
 :env_fail
 echo    [error] env creation failed on ALL mirrors (see the output above).
-echo    send this window's text to the developer - likely a proxy; if so, set
-echo    HTTPS_PROXY/HTTP_PROXY before running this file, or tell the developer.
+echo    paste everything in this window to the developer, especially:
+echo    - the 'micromamba info' platform line,
+echo    - the three 'first bytes' probe lines.
 pause
 exit /b 1
 :model_fail
