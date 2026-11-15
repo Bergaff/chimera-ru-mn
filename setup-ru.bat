@@ -1,9 +1,9 @@
 @echo off
 rem  CHIMERA - one-time setup for the Russian forced alignment.
 rem  micromamba (win-64) + montreal-forced-aligner 3.4.3 + Russian MFA acoustic
-rem  model v3.1.0 (fallback v2.0.0) + Russian MFA dictionary v3.1.0 (fallback v2.0.0)
-rem  + Russian MFA G2P v3.1.0 (optional, best effort).
-rem  Everything lands in .tools\mfa inside the project folder - nothing on drive C:
+rem  model v3.1.0 (fallback v2.0.0) + Russian MFA dictionary (v3.1.0, fallback v2.0.0)
+rem  + Russian MFA G2P v3.1.0 (optional). Everything lands in .tools\mfa - nothing on C:.
+rem  conda-forge mirrors are tried in order: upstream -> prefix.dev -> TUNA.
 setlocal EnableExtensions
 chcp 65001 >nul
 cd /d "%~dp0"
@@ -33,12 +33,38 @@ if errorlevel 1 goto mamba_fail
 :have_mamba
 echo    micromamba: %MAMBA_EXE%
 
-rem --- 2) conda env with MFA ---------------------------------------------------
+rem --- 1b) channel probe (diagnostics only) -----------------------------------
+echo.
+echo    probing conda-forge mirrors (best effort, tells us which route works) ...
+where curl.exe >nul 2>nul
+if errorlevel 1 goto probes_done
+curl.exe -s -I --head --connect-timeout 6 --max-time 15 -o NUL -w "      conda.anaconda.org  -> HTTP %%{http_code}\n" https://conda.anaconda.org/conda-forge/win-64/repodata.json
+curl.exe -s -I --head --connect-timeout 6 --max-time 15 -o NUL -w "      prefix.dev         -> HTTP %%{http_code}\n" https://prefix.dev/conda-forge/win-64/repodata.json
+curl.exe -s -I --head --connect-timeout 6 --max-time 15 -o NUL -w "      tuna tsinghua      -> HTTP %%{http_code}\n" https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge/win-64/repodata.json
+:probes_done
+
+rem --- 2) conda env with MFA (mirror cascade) ----------------------------------
 if exist "%ENV_DIR%\Scripts\mfa.exe" goto mfa_env_ready
-echo    creating env: montreal-forced-aligner 3.4.3 + python 3.11 (conda-forge) ...
-echo    this takes a few minutes; progress below.
-"%MAMBA_EXE%" create -y -q -p "%ENV_DIR%" -c conda-forge montreal-forced-aligner=3.4.3 python=3.11
-if errorlevel 1 goto env_fail
+echo.
+echo    creating env: montreal-forced-aligner 3.4.3 + python 3.11 ...
+echo    if the upstream channel is blocked, mirrors kick in automatically
+echo    (prefix.dev, then tuna tsinghua). Deleting any stale half-made env first.
+if exist "%ENV_DIR%" rmdir /s /q "%ENV_DIR%"
+call :try_channel conda-forge
+if not errorlevel 1 goto mfa_env_ready
+echo    [warn] upstream conda-forge failed, trying https://prefix.dev/conda-forge ...
+if exist "%ENV_DIR%" rmdir /s /q "%ENV_DIR%"
+call :try_channel https://prefix.dev/conda-forge
+if not errorlevel 1 goto mfa_env_ready
+echo    [warn] prefix.dev failed, trying the tuna tsinghua mirror ...
+if exist "%ENV_DIR%" rmdir /s /q "%ENV_DIR%"
+call :try_channel https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge
+if not errorlevel 1 goto mfa_env_ready
+goto env_fail
+:try_channel
+echo    channel: %1
+"%MAMBA_EXE%" create -y -p "%ENV_DIR%" -c "%1" montreal-forced-aligner=3.4.3 python=3.11
+exit /b %errorlevel%
 :mfa_env_ready
 call "%ENV_DIR%\Scripts\activate.bat" >nul
 for /f "delims=" %%v in ('mfa version 2^>nul') do set "MFAV=%%v"
@@ -76,7 +102,9 @@ echo    [error] could not download micromamba (network/proxy?). See the output a
 pause
 exit /b 1
 :env_fail
-echo    [error] env creation failed (conda-forge unreachable?). See the output above.
+echo    [error] env creation failed on ALL mirrors (see the output above).
+echo    send this window's text to the developer - likely a proxy; if so, set
+echo    HTTPS_PROXY/HTTP_PROXY before running this file, or tell the developer.
 pause
 exit /b 1
 :model_fail

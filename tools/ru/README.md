@@ -54,8 +54,11 @@ It sets up a portable Python/ffmpeg in .tools when needed and runs step 3 for yo
 7. MFA alignment (Windows). Double-click `setup-ru.bat` once: it installs micromamba +
    montreal-forced-aligner 3.4.3 into `.tools\mfa` (nothing on drive C:) and downloads the
    Russian MFA acoustic model v3.1.0 + dictionary v3.1.0 (CC BY 4.0; v3.1.0 G2P for
-   out-of-dictionary words like brand names, best effort). Then drag the corpus folder
-   onto `align-ru.bat`:
+   out-of-dictionary words like brand names, best effort). The conda-forge channel is
+   tried in order — upstream (conda.anaconda.org), the official https://prefix.dev/conda-forge
+   mirror, and the tuna.tsinghua.edu.cn one — and a probe summary is printed first, so if
+   everything fails the window tells you which host is reachable (proxy?). Then drag the
+   corpus folder onto `align-ru.bat`:
 
    ```sh
    # or:  align-ru.bat "I:\path\corpus\ru"
