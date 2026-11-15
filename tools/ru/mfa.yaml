@@ -1,0 +1,6 @@
+# Montreal Forced Aligner settings for the RU AI-dictor corpus. Same settings for
+# every utterance; each utterance is its own "speaker" (its own directory).
+# dither 0: otherwise the model adds random noise and the same file aligns
+# differently from run to run (same lesson as tools/tsp/mfa.yaml).
+dither: 0
+uses_speaker_adaptation: false

@@ -51,8 +51,27 @@ It sets up a portable Python/ffmpeg in .tools when needed and runs step 3 for yo
    → «девятнадцатого января», `70%` → «семьдесят процентов»), and lists rows that look
    non-Russian (excluded — e.g. the English Raid-sponsor take) or contain long digit runs
    (check whether a phone number is meant to be read digit-by-digit).
-7. Next: MFA alignment with the Russian MFA acoustic model v3.1.0 + Russian MFA dictionary
-   v3.1.0 (CC BY 4.0; v3.1.0 G2P for out-of-dictionary words like brand names) →
-   `alignment.tsv.gz` → `chimera compare ru`. See docs/realism-plan.md (Phases 0–1).
+7. MFA alignment (Windows). Double-click `setup-ru.bat` once: it installs micromamba +
+   montreal-forced-aligner 3.4.3 into `.tools\mfa` (nothing on drive C:) and downloads the
+   Russian MFA acoustic model v3.1.0 + dictionary v3.1.0 (CC BY 4.0; v3.1.0 G2P for
+   out-of-dictionary words like brand names, best effort). Then drag the corpus folder
+   onto `align-ru.bat`:
+
+   ```sh
+   # or:  align-ru.bat "I:\path\corpus\ru"
+   ```
+
+   It builds `mfa\corpus\<id>\` (hardlinked 16 kHz WAV + lowercased `<id>.lab`), runs
+   `mfa align` with `tools/ru/mfa.yaml` (dither 0, no speaker adaptation — same convention
+   as tools/tsp), and writes `tools/ru/alignment.tsv.gz` (id, tier=word|phone, start, end,
+   label; sil/sp/<eps> dropped; mtime 0, so re-runs with the same result are byte-identical).
+   Derived table, no audio — intended to be committed, like tools/tsp/alignment.tsv.gz.
+   Utterances MFA can't align are listed at the end (OOV brand names; the English take was
+   already excluded from sentences.mfa.tsv).
+   Note: if your repo lives under a non-ASCII path (e.g. `I:\химера`) and kaldi crashes
+   with strange file errors, map a pure-ASCII drive once with `subst X: I:\химера` and run
+   everything from `X:\` instead.
+8. Next: reference profiles per phone (F1/F2/F3, durations, H1-H2, sibilant levels) and
+   `chimera compare ru`. See docs/realism-plan.md (Phases 0–1).
 
 Ids are Latin slugs (filenames transliterated from Cyrillic), unique with `-2`, `-3` suffixes.
