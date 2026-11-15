@@ -8,6 +8,7 @@ chcp 65001 >nul
 cd /d "%~dp0"
 set "TOOLS_DIR=%CD%\.tools"
 set "PIXI_HOME=%TOOLS_DIR%\pixi"
+set "PIXI_CACHE_DIR=%TOOLS_DIR%\pixi-cache"
 set "MFA_ROOT_DIR=%TOOLS_DIR%\mfa\cache"
 
 echo.
@@ -40,7 +41,7 @@ echo    config: %PIXI_HOME%\config.toml
 
 rem --- 3) global install of MFA from the OCI mirror ------------------------------
 if exist "%PIXI_HOME%\known-good.txt" goto mfa_ready
-echo    installing montreal-forced-aligner 3.4.3 (this downloads ~1-2 GB) ...
+echo    installing montreal-forced-aligner 3.4.3 (this downloads ~1-2 GB into .tools\pixi-cache) ...
 "%PIXI_HOME%\bin\pixi.exe" global install "montreal-forced-aligner =3.4.3" "python =3.11"
 if errorlevel 1 (
   echo    [warn] pinned spec failed, trying unpinned montreal-forced-aligner ...
@@ -49,36 +50,50 @@ if errorlevel 1 (
 )
 echo ok> "%PIXI_HOME%\known-good.txt"
 :mfa_ready
-echo    mfa: %PIXI_HOME%\bin\mfa.exe
+rem --- resolve where `pixi global` actually put mfa.exe -----------------------
+"%PIXI_HOME%\bin\pixi.exe" info > "%PIXI_HOME%\pixi-info.txt" 2>&1
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$l = Get-Content '%PIXI_HOME%\pixi-info.txt' | Where-Object { $_ -match '^Bin dir' } | Select-Object -First 1; if ($l) { $d = ($l -split ':',2)[-1].Trim(); $p = Join-Path $d 'mfa.exe'; if (Test-Path $p) { Set-Content '%PIXI_HOME%\mfa-bin.txt' -Value $p -NoNewline; Write-Host ('resolved: ' + $p) } }"
+if not exist "%PIXI_HOME%\mfa-bin.txt" (
+  if exist "%PIXI_HOME%\bin\mfa.exe" (> "%PIXI_HOME%\mfa-bin.txt" echo %PIXI_HOME%\bin\mfa.exe)
+)
+set "MFA_BIN="
+if exist "%PIXI_HOME%\mfa-bin.txt" for /f "usebackq delims=" %%i in ("%PIXI_HOME%\mfa-bin.txt") do set "MFA_BIN=%%i"
+if not defined MFA_BIN goto mfa_bin_fail
+echo    mfa: %MFA_BIN%
 "%PIXI_HOME%\bin\pixi.exe" global list
 echo.
 
 rem --- 4) models ------------------------------------------------------------------
 echo    downloading Russian acoustic model v3.1.0 (fallback v2.0.0) ...
-"%PIXI_HOME%\bin\mfa.exe" model download acoustic russian_mfa --version v3.1.0
+"%MFA_BIN%" model download acoustic russian_mfa --version v3.1.0
 if errorlevel 1 (
   echo    [warn] v3.1.0 failed, trying v2.0.0 ...
-  "%PIXI_HOME%\bin\mfa.exe" model download acoustic russian_mfa --version v2.0.0
+  "%MFA_BIN%" model download acoustic russian_mfa --version v2.0.0
   if errorlevel 1 goto model_fail
 )
 echo    downloading Russian dictionary v3.1.0 (fallback v2.0.0) ...
-"%PIXI_HOME%\bin\mfa.exe" model download dictionary russian_mfa --version v3.1.0
+"%MFA_BIN%" model download dictionary russian_mfa --version v3.1.0
 if errorlevel 1 (
   echo    [warn] v3.1.0 failed, trying v2.0.0 ...
-  "%PIXI_HOME%\bin\mfa.exe" model download dictionary russian_mfa --version v2.0.0
+  "%MFA_BIN%" model download dictionary russian_mfa --version v2.0.0
   if errorlevel 1 goto model_fail
 )
 echo    downloading Russian G2P v3.1.0 (optional, best effort) ...
-"%PIXI_HOME%\bin\mfa.exe" model download g2p russian_mfa --version v3.1.0
+"%MFA_BIN%" model download g2p russian_mfa --version v3.1.0
 if errorlevel 1 echo    [warn] G2P unavailable; unseen words stay OOV - harmless.
 echo.
 echo    installed models:
-"%PIXI_HOME%\bin\mfa.exe" model list
+"%MFA_BIN%" model list
 echo.
 echo  Done. Now drag I:\chemera\corpus\ru onto align-ru.bat.
 pause
 exit /b 0
 
+:mfa_bin_fail
+echo    [error] `pixi global install` finished but mfa.exe was not found; see %PIXI_HOME%\pixi-info.txt
+echo    and send both files (pixi-info.txt and this window output) to the developer.
+pause
+exit /b 1
 :pixi_fail
 echo    [error] could not download pixi from GitHub (network/proxy?). See the output above.
 pause

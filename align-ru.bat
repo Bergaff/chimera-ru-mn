@@ -7,9 +7,10 @@ chcp 65001 >nul
 cd /d "%~dp0"
 set "MFA_DIR=%CD%\.tools\mfa"
 set "ENV_DIR=%MFA_DIR%\env"
-set "PIXI_MFA=%CD%\.tools\pixi\bin\mfa.exe"
 set "MAMBA_ROOT_PREFIX=%MFA_DIR%\root"
+set "PIXI_CACHE_DIR=%CD%\.tools\pixi-cache"
 set "MFA_ROOT_DIR=%MFA_DIR%\cache"
+set "PIXI_HOME=%CD%\.tools\pixi"
 set "TOOLS_DIR=%CD%\.tools"
 set "VP=%TOOLS_DIR%\whisper-venv\Scripts\python.exe"
 set "MFABIN="
@@ -24,8 +25,12 @@ set "DST=%~1"
 if not exist "%DST%\sentences.mfa.tsv" goto bad_mfa
 if not exist "%DST%\wav16k" goto bad_mfa
 
-if exist "%ENV_DIR%\Scripts\mfa.exe" (set "MFABIN=%ENV_DIR%\Scripts\mfa.exe" & set "MFAROUTE=micromamba")
-if exist "%PIXI_MFA%" if not defined MFABIN (set "MFABIN=%PIXI_MFA%" & set "MFAROUTE=pixi")
+set "MFABIN="
+if exist "%PIXI_HOME%\mfa-bin.txt" for /f "usebackq delims=" %%i in ("%PIXI_HOME%\mfa-bin.txt") do set "MFABIN=%%i"
+if defined MFABIN if not exist "%MFABIN%" set "MFABIN="
+if not defined MFABIN if exist "%PIXI_HOME%\bin\mfa.exe" set "MFABIN=%PIXI_HOME%\bin\mfa.exe"
+if defined MFABIN set "MFAROUTE=pixi"
+if not defined MFABIN if exist "%ENV_DIR%\Scripts\mfa.exe" (set "MFABIN=%ENV_DIR%\Scripts\mfa.exe" & set "MFAROUTE=micromamba")
 if not defined MFABIN goto no_env
 echo    mfa route: %MFAROUTE%  (%MFABIN%)
 
