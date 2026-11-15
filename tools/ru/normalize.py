@@ -133,6 +133,19 @@ def _num_plain(n):
     return cardinal(n, fem=False)
 
 
+ROMAN = [(1000, "M"), (900, "CM"), (500, "D"), (400, "CD"), (100, "C"),
+         (90, "XC"), (50, "L"), (40, "XL"), (10, "X"), (9, "IX"), (5, "V"), (4, "IV"), (1, "I")]
+
+
+def roman(s):
+    total, i = 0, 0
+    for value, symbol in ROMAN:
+        while s[i:i + len(symbol)] == symbol:
+            total += value
+            i += len(symbol)
+    return total
+
+
 def to_genitive(word):
     if word.endswith("ий"):
         return word[:-2] + "ьего"
@@ -218,8 +231,16 @@ def normalize_text(text):
                lambda m: f" {ordinal_gen(int(m.group(1)))} {m.group(2)} ", s)
     s = re.sub(r"\b(\d{3,4})\s+году\b",
                lambda m: f" {ordinal_prep(int(m.group(1)))} году ", s)
+    s = re.sub(r"\b(\d{3,4})\s+года\b",
+               lambda m: f" {ordinal_gen(int(m.group(1)))} года ", s)
     s = re.sub(r"\b(\d{3,4})\s+год\b",
                lambda m: f" {year_words(int(m.group(1)))} год ", s)
+    s = re.sub(r"\b([IVXLCDM]{2,})\s+века\b",
+               lambda m: f" {ordinal_gen(roman(m.group(1)))} века ", s)
+    s = re.sub(r"\b([IVXLCDM]{2,})\s+веке\b",
+               lambda m: f" {ordinal_prep(roman(m.group(1)))} веке ", s)
+    s = re.sub(r"\b([IVXLCDM]{2,})\s+век\b",
+               lambda m: f" {ordinal_masc(roman(m.group(1)))} век ", s)
     s = re.sub(r"\b(\d+)[.,](\d+)\b", lambda m: f" {decimal_words(m.group(1), m.group(2))} ", s)
     s = re.sub(r"\d+", lambda m: f" {cardinal(int(m.group()))} ", s)
     s = re.sub(r"[^0-9A-Za-zА-Яа-яЁё ]+", " ", s)
