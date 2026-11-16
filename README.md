@@ -74,6 +74,29 @@ Python (`.tools\python`) and, only if you want the 16 kHz conversion for MFA, a 
 ffmpeg (`.tools\ffmpeg`) when they are missing; nothing is installed system-wide or on
 drive C:. See [tools/ru/README.md](tools/ru/README.md).
 
+## Moving the project (another drive / second machine)
+
+Everything CHIMERA writes onto disk lives inside the project folder (`.tools\`, gitignored);
+nothing installs system-wide or on drive C:. The tree can be moved to any drive and any path.
+On Windows:
+
+1. Copy the folder **including hidden subfolders**, e.g.
+   `robocopy I:\old-drive-path E:\new-drive-path /E /XJ` — `.git`, `corpus\` and `.tools\`
+   travel with it.
+2. Finish `setup-ru-pixi.bat` (or `setup-ru.bat`) **before** copying if you can; copying a
+   half-installed environment is recoverable. If the copied `.tools\pixi` no longer starts,
+   `setup-ru-pixi.bat` warns (it smoke-tests `mfa version`): keep `.tools\pixi-cache`,
+   delete `.tools\pixi` entirely, double-click the script again — the package cache
+   survives, so reinstall is fast.
+3. `.tools\whisper-venv\` keeps working through the bat files (relative paths), but absolute
+   paths inside the venv itself stay bound to the old location; re-create the venv if it
+   misbehaves.
+4. On the new machine, `git push`/`pull` need their own GitHub sign-in. The corpus is never
+   committed — only moved by hand.
+5. If `git status` right after the copy lists every file as modified, it is line endings —
+   do not commit that; see `.gitattributes`.
+6. Non-ASCII path + kaldi crash: `subst X: "E:\<path>"` once, then work through the ASCII drive.
+
 The AudioWorklet needs a secure context, so open it on localhost or over HTTPS (for example
 `tailscale serve`). Vercel builds it with `vercel.json`.
 

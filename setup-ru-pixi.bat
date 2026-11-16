@@ -61,6 +61,14 @@ if exist "%PIXI_HOME%\mfa-bin.txt" for /f "usebackq delims=" %%i in ("%PIXI_HOME
 if not defined MFA_BIN goto mfa_bin_fail
 echo    mfa: %MFA_BIN%
 "%PIXI_HOME%\bin\pixi.exe" global list
+"%MFA_BIN%" version >nul 2>&1
+if errorlevel 1 (
+  echo    [warn] the installed mfa does not start.
+  echo    If you copied this project to a new drive or machine, the pixi shims
+  echo    still point to the old path. Recovery: keep .tools\pixi-cache, delete
+  echo    .tools\pixi entirely, and double-click this script again. The package
+  echo    cache survives, so the reinstall is fast.
+)
 echo.
 
 rem --- 4) models ------------------------------------------------------------------
