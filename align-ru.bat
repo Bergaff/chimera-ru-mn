@@ -1,7 +1,7 @@
 @echo off
 rem  CHIMERA - align the Russian corpus with MFA.
 rem  USAGE: drag the corpus folder (it must contain sentences.mfa.tsv and wav16k\)
-rem         onto this file, or: align-ru.bat "I:\path\corpus\ru"
+rem         onto this file, or: align-ru.bat "X:\path\to\corpus\ru"
 setlocal EnableExtensions
 chcp 65001 >nul
 cd /d "%~dp0"
@@ -74,7 +74,7 @@ exit /b 1
 :step_fail
 echo.
 echo    [error] a step failed - see the output above and send it to the developer.
-echo    if it smells like non-ASCII path trouble (I:\chemera...), see tools/ru/README.md
+echo    if it smells like non-ASCII path trouble (project under a non-ASCII path), see tools/ru/README.md
 echo    for the subst trick (pure-ASCII drive mapped to this folder).
 pause
 exit /b 1
@@ -83,6 +83,6 @@ exit /b 1
 echo  How to use:
 echo    1. Run setup-ru.bat once (or setup-ru-pixi.bat if conda-forge is blocked),
 echo       then drag your corpus folder (with sentences.mfa.tsv and wav16k\) ONTO this file, or
-echo    2. Run from a terminal:  align-ru.bat "I:\chemera\corpus\ru"
+echo    2. Run from a terminal:  align-ru.bat "X:\path\to\corpus\ru"
 pause
 exit /b 0

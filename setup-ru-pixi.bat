@@ -85,7 +85,7 @@ echo.
 echo    installed models:
 "%MFA_BIN%" model list
 echo.
-echo  Done. Now drag I:\chemera\corpus\ru onto align-ru.bat.
+echo  Done. Now drag your corpus folder (the one with sentences.mfa.tsv and wav16k) onto align-ru.bat.
 pause
 exit /b 0
 

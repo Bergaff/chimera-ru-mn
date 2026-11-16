@@ -172,8 +172,8 @@ echo  No folder given. How to use:
 echo.
 echo  1. Drag your folder of audio ONTO this ru-corpus.bat file, or
 echo  2. Run from a terminal:
-echo       ru-corpus.bat "I:\химера\ru_voice"
-echo       ru-corpus.bat "I:\химера\ru_voice" "G:\datasets\ru"   (destination optional)
+echo       ru-corpus.bat "X:\path\to\audio"
+echo       ru-corpus.bat "X:\path\to\audio" "Y:\datasets\ru"   (destination optional)
 echo.
 echo  Corpus defaults to: %CD%\corpus\ru  (gitignored; raw audio never enters git)
 pause

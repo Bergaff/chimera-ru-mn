@@ -3,7 +3,7 @@ rem  CHIMERA - Russian corpus auto-transcription (faster-whisper, language ru).
 rem
 rem  USAGE:
 rem    1. Drag the corpus folder ONTO this file   (default: <repo>\corpus\ru)
-rem    2. Or run:  ru-transcribe.bat "I:\chemera\corpus\ru"
+rem    2. Or run:  ru-transcribe.bat "X:\path\to\corpus\ru"
 rem    3. Double-clicking prints this help.
 rem
 rem  Everything stays inside the project folder: the venv lives in
@@ -114,7 +114,7 @@ echo  How to use:
 echo.
 echo  1. Drag your corpus folder (the one containing sentences.tsv, e.g. %CD%\corpus\ru)
 echo     ONTO this file, or
-echo  2. Run from a terminal:  ru-transcribe.bat "I:\chemera\corpus\ru"
+echo  2. Run from a terminal:  ru-transcribe.bat "X:\path\to\corpus\ru"
 echo.
 echo  Creates .tools\whisper-venv with faster-whisper and downloads the chosen model
 echo  into .tools\hf - both inside the project folder, nothing on drive C:.

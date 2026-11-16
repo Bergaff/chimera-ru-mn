@@ -53,7 +53,7 @@ exit /b 1
 :usage
 echo  How to use:
 echo    1. Drag your corpus folder (the one with sentences.tsv and wav\) ONTO this file, or
-echo    2. Run from a terminal:  ru-prepare.bat "I:\chemera\corpus\ru"
+echo    2. Run from a terminal:  ru-prepare.bat "X:\path\to\corpus\ru"
 echo.
 echo  Writes wav16k\ (16 kHz mono, for MFA) and sentences.mfa.tsv (normalized text).
 echo  Never modifies sentences.tsv.

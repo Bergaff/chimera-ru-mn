@@ -63,7 +63,7 @@ It sets up a portable Python/ffmpeg in .tools when needed and runs step 3 for yo
    (proxy/captive portal?). Then drag the corpus folder onto `align-ru.bat`:
 
    ```sh
-   # or:  align-ru.bat "I:\path\corpus\ru"
+   # or:  align-ru.bat "X:\path\to\corpus\ru"
    ```
 
    It builds `mfa\corpus\<id>\` (hardlinked 16 kHz WAV + lowercased `<id>.lab`), runs
@@ -80,8 +80,8 @@ It sets up a portable Python/ffmpeg in .tools when needed and runs step 3 for yo
    double-click `ru-mfa-probe.bat` (deep byte-range probes + micromamba's own view via a
    verbose dry-run) and paste the output. `align-ru.bat` auto-detects whichever route is
    installed. Either way `MFA_ROOT_DIR=.tools\mfa\cache` keeps the model cache in-project.
-   Note: if your repo lives under a non-ASCII path (e.g. `I:\химера`) and kaldi crashes
-   with strange file errors, map a pure-ASCII drive once with `subst X: I:\химера` and run
+   Note: if your repo lives under a non-ASCII path (e.g. `X:\<cyrillic folder>`) and kaldi crashes
+   with strange file errors, map a pure-ASCII drive once with `subst X: "X:\cyrillic\folder"` and run
    everything from `X:\` instead.
 8. Next: reference profiles per phone (F1/F2/F3, durations, H1-H2, sibilant levels) and
    `chimera compare ru`. See docs/realism-plan.md (Phases 0–1).
