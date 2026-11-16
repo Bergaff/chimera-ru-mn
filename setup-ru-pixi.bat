@@ -91,7 +91,9 @@ echo    downloading Russian G2P v3.1.0 (optional, best effort) ...
 if errorlevel 1 echo    [warn] G2P unavailable; unseen words stay OOV - harmless.
 echo.
 echo    installed models:
-"%MFA_BIN%" model list
+"%MFA_BIN%" model list acoustic
+"%MFA_BIN%" model list dictionary
+"%MFA_BIN%" model list g2p
 echo.
 echo  Done. Now drag your corpus folder (the one with sentences.mfa.tsv and wav16k) onto align-ru.bat.
 pause
